@@ -4,9 +4,8 @@ project(narf_wifi_protocol)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
-###################################
-## catkin specific configuration ##
-###################################
+## catkin specific configuration
+#find_package(catkin REQUIRED COMPONENTS roscpp)
 #catkin_package(
 #  INCLUDE_DIRS include
 #  CATKIN_DEPENDS roscpp
