@@ -1,1 +1,3 @@
-Arduino smart socket project
+Arduino smart socket project.
+
+Author: Fran Jurican
