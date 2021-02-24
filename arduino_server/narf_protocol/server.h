@@ -1,5 +1,5 @@
-#ifndef NARF_WIRELESS_PROTOCOL_H
-#define NARF_WIRELESS_PROTOCOL_H
+#ifndef NARF_WIRELESS_PROTOCOL_SERVER_H
+#define NARF_WIRELESS_PROTOCOL_SERVER_H
 
 // headers
 #include <SPI.h>
@@ -98,4 +98,4 @@ class NarfWirelessProtocolServer
         int head_rec_count;
 };
 
-#endif // NARF_WIRELESS_PROTOCOL_H
+#endif // NARF_WIRELESS_PROTOCOL_SERVER_H

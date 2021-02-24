@@ -1,4 +1,4 @@
-#include "narf_wireless_protocol.h"
+#include "narf_protocol/server.h"
 
 NarfWirelessProtocolServer::NarfWirelessProtocolServer(int port) : module_init(false), server(port), head_rec_count(0)
 {}

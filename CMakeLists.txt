@@ -4,16 +4,22 @@ project(narf_wifi_protocol)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+###################################
+## catkin specific configuration ##
+###################################
+#catkin_package(
+#  INCLUDE_DIRS include
+#  CATKIN_DEPENDS roscpp
+#)
+
 ## custom include
-include_directories(client/narf_protocol)
+include_directories(client)
 
 ## add .so library
-# add_library(NarfWifiProtocolLib client/narf_protocol_client.cpp)
+add_library(NarfWifiProtocolLib client/narf_protocol_client.cpp)
 
 ## Declare a C++ executable
 add_executable(proto_test client/protocol_ardu.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(proto_test 
-  #NarfWifiProtocolLib
-)
+target_link_libraries(proto_test NarfWifiProtocolLib)

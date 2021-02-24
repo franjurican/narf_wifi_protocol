@@ -1,5 +1,5 @@
-#include "narf_wireless_protocol.h"
-#include "some_fun.h"
+#include "narf_protocol/server.h"
+#include "narf_protocol/some_fun.h"
 
 #define BUTTON_PIN   4
 #define LED_PIN      8
