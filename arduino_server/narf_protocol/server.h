@@ -4,7 +4,7 @@
 // headers
 #include <SPI.h>
 #include <WiFiNINA.h>
-#include "narf_protocol_definitions.h"
+#include "definitions.h"
 
 class NarfWirelessProtocolServer
 {

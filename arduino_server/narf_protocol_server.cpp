@@ -188,7 +188,7 @@ int NarfWirelessProtocolServer::getRawMsgBody(WiFiClient &client, uint8_t *cmd, 
         return -1;
 
     // read data only if there is data in msg
-    if(lenght > 0)
+    if(lenght > 0 && data != NULL)
     {
         bytes_read = client.readBytes(data, lenght);
         if(bytes_read != lenght)
@@ -201,7 +201,7 @@ int NarfWirelessProtocolServer::getRawMsgBody(WiFiClient &client, uint8_t *cmd, 
 void NarfWirelessProtocolServer::respondeToMsg(WiFiClient &client, int lenght, uint8_t response_code, uint8_t data[])
 {
     // send header
-    const uint8_t header[8] = {0xAC, 0x46, 0x72, 0x41, 0x6E, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
+    const uint8_t header[15] = {0xAC, 0x46, 0x72, 0x41, 0x6E, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
     client.write(header, sizeof(header));
 
     // send lenght

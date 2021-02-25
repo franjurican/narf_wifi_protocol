@@ -7,6 +7,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <narf_protocol/client.h>
+#include <narf_protocol/definitions.h>
 
 #define ERROR(msg) {std::cout << msg << std::endl; std::cout << "ERRNO: " << errno << std::endl; exit(24);}
 
@@ -17,7 +18,7 @@ uint16_t port1_arduino = 12;
 
 int main(int argc, char *argv[])
 {
-    int sock_fd, read_bytes, write_bytes, no_delay = 1;
+    /*int sock_fd, read_bytes, write_bytes, no_delay = 1;
     struct sockaddr_in adresa;
     
     // otvori socket
@@ -86,6 +87,29 @@ int main(int argc, char *argv[])
     read_bytes = read(sock_fd, data, sizeof(data));
     std::cout << "velicina data: " << read_bytes << ", PIN: " << (int)data[0] << std::endl;
 
-    close(sock_fd);    
+    close(sock_fd);*/
+
+    NarfWirelessProtocolClient client(ip_arduino);
+
+    client.connectToServer();
+
+    uint8_t cmd = 0x08, res_cmd;
+    uint8_t data[1] = {8}, res_data[NARF_PROT_MAX_MSG_DATA_SIZE];
+    short int lenght = sizeof(data), res_lenght;
+
+    if(res_cmd = client.sendProtocolMsg(cmd, lenght, data, res_lenght, res_data) == NARF_RES_OK)
+    {
+        std::cout << "Uspjesno poslana poruka! Response je: " << std::endl;
+        std::cout << "Response data lenght: " << res_lenght << std::endl;
+        std::cout << "Response cmd: " << res_cmd << std::endl;
+        std::cout << "Response data[0]: " << res_data[0] << std::endl;
+    }
+    else
+    {
+        std::cout << "Poruka nije uspjesno poslana! Response je: " << std::endl;
+        std::cout << "Response data lenght: " << res_lenght << std::endl;
+        std::cout << "Response cmd: " << res_cmd << std::endl;
+    }
+
     return 0;
 }

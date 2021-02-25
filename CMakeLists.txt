@@ -5,14 +5,14 @@ project(narf_wifi_protocol)
 add_compile_options(-std=c++11)
 
 ## catkin specific configuration
-#find_package(catkin REQUIRED COMPONENTS roscpp)
-#catkin_package(
-#  INCLUDE_DIRS include
-#  CATKIN_DEPENDS roscpp
-#)
+find_package(catkin REQUIRED COMPONENTS roscpp)
+catkin_package(
+  INCLUDE_DIRS client arduino_server
+  CATKIN_DEPENDS roscpp
+)
 
 ## custom include
-include_directories(client)
+include_directories(client arduino_server)
 
 ## add .so library
 add_library(NarfWifiProtocolLib client/narf_protocol_client.cpp)
