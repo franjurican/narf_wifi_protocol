@@ -41,23 +41,33 @@ class NarfWirelessProtocolClient
 
     private:
         /* 
-            Checks for header "inside" header situations! 
+            Checks for header "inside" header situations!
+            \param pack_num packet number   
             \return true if header is finded
         */
-        bool checkHeaderBody();
+        bool checkHeaderBody(uint8_t pack_num);
 
         /* 
             Detects message header - start of message packet.
+            \param pack_num packet number
             \return true if header is finded
         */
-        bool detectMsgHeader();
+        bool detectMsgHeader(uint8_t pack_num);
 
         /* 
             Read response msg.
+            \param pack_num packet number
+            \param res_lenght response data lenght
             \param res_data server response data
             \return response code
         */
-        uint8_t getResponseMsg(short int &res_lenght, uint8_t res_data[]);
+        uint8_t getResponseMsg(uint8_t pack_num, short int &res_lenght, uint8_t res_data[]);
+
+        /*
+            Generate packet number.
+            \retunr packet number
+        */
+        uint8_t generatePacketNumber();
 
         // private variables
         /* file descriptor */
@@ -71,6 +81,9 @@ class NarfWirelessProtocolClient
 
         /* count recursive function calls - checkHeaderBody() */
         int head_rec_count;
+
+        /* msg packet number */
+        uint8_t packet_num;
 };
 
 #endif //NARF_WIRELESS_PROTOCOL_CLIENT_H

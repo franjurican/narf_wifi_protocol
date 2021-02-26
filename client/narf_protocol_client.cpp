@@ -1,7 +1,7 @@
 #include <narf_protocol/client.h>
 
 NarfWirelessProtocolClient::NarfWirelessProtocolClient(std::string serverIPv4, uint16_t server_port) : serverIP(serverIPv4), 
-                                                                                                            server_port(server_port), head_rec_count(0)
+                                                                server_port(server_port), head_rec_count(0), packet_num(0)
 {}
 
 NarfWirelessProtocolClient::~NarfWirelessProtocolClient()
@@ -44,8 +44,9 @@ void NarfWirelessProtocolClient::connectToServer(uint32_t timeout_ms, bool tcp_d
 
 uint8_t NarfWirelessProtocolClient::sendProtocolMsg(uint8_t cmd, short int lenght, uint8_t req_data[], short int &res_lenght, uint8_t res_data[])
 {
-    uint8_t header[] = {0xAC, 0x46, 0x72, 0x41, 0x6E, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
-    
+    uint8_t pack_num = this->generatePacketNumber();
+    uint8_t header[] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
+
     // send header, lenght and cmd
     write(this->sock_fd, header, sizeof(header));
     write(this->sock_fd, &lenght, sizeof(lenght));
@@ -55,10 +56,10 @@ uint8_t NarfWirelessProtocolClient::sendProtocolMsg(uint8_t cmd, short int lengh
     if(req_data != NULL && lenght > 0)
         write(this->sock_fd, req_data, lenght);
 
-    return this->getResponseMsg(res_lenght, res_data);
+    return this->getResponseMsg(pack_num, res_lenght, res_data);
 }
 
-bool NarfWirelessProtocolClient::checkHeaderBody()
+bool NarfWirelessProtocolClient::checkHeaderBody(uint8_t pack_num)
 {
     uint8_t buff;
     int bytes_read;
@@ -74,65 +75,83 @@ bool NarfWirelessProtocolClient::checkHeaderBody()
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != 0x46)
-        return false;
+        return this->detectMsgHeader(pack_num);
 
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != 0x72)
-        return false;
-    
+        return this->detectMsgHeader(pack_num);
+
+    // packet number
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
+    else if(buff != pack_num)
+        return this->detectMsgHeader(pack_num);
+    
+    // protocol check bytes
+    bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
+        return false;
+    else if(buff == 0xAC)
+        return this->checkHeaderBody(pack_num);
     else if(buff != 0x41)
-        return false;
+        return this->detectMsgHeader(pack_num);
     
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != 0x6E)
+        return this->detectMsgHeader(pack_num);
+
+    bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
         return false;
+    else if(buff == 0xAC)
+        return this->checkHeaderBody(pack_num);
+    else if(buff != 0x4A)
+        return this->detectMsgHeader(pack_num);
     
     // version max - CAN'T BE EQUAL TO START BITS!!!!
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != NARF_PROT_VER_MAX)
-        return false;
+        return this->detectMsgHeader(pack_num);
 
     // version min - CAN'T BE EQUAL TO START BITS!!!!
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != NARF_PROT_VER_MIN)
-        return false;
+        return this->detectMsgHeader(pack_num);
 
     // header end bytes
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
     else if(buff == 0xAC)
-        return this->checkHeaderBody();
+        return this->checkHeaderBody(pack_num);
     else if(buff != 0xDC)
-        return false;
+        return this->detectMsgHeader(pack_num);
 
     return true;
 }
 
-bool NarfWirelessProtocolClient::detectMsgHeader()
+bool NarfWirelessProtocolClient::detectMsgHeader(uint8_t pack_num)
 {
     uint8_t buff;
     int bytes_read;
@@ -150,22 +169,22 @@ bool NarfWirelessProtocolClient::detectMsgHeader()
     else if(buff != 0xAC)
     {   
         this->head_rec_count++;
-        return this->detectMsgHeader();
+        return this->detectMsgHeader(pack_num);
     }
     else
     {
-        dummy = this->checkHeaderBody();
+        dummy = this->checkHeaderBody(pack_num);
         this->head_rec_count = 0;
         return dummy;
     }
 }
 
-uint8_t NarfWirelessProtocolClient::getResponseMsg(short int &res_lenght, uint8_t res_data[])
+uint8_t NarfWirelessProtocolClient::getResponseMsg(uint8_t pack_num, short int &res_lenght, uint8_t res_data[])
 {
     int read_bytes;
     uint8_t cmd;
 
-    if(this->detectMsgHeader())
+    if(this->detectMsgHeader(pack_num))
     {
         // res data lenght
         read_bytes = read(sock_fd, &res_lenght, sizeof(res_lenght));
@@ -187,5 +206,17 @@ uint8_t NarfWirelessProtocolClient::getResponseMsg(short int &res_lenght, uint8_
         return cmd;
     }
     else
-        return NARF_RES_ERROR_TIMEOUT;
+        return NARF_RES_ERROR_HEADER;
+}
+
+uint8_t NarfWirelessProtocolClient::generatePacketNumber()
+{
+    // new packet
+    this->packet_num++;
+
+    // packet number goes from 1-255!!
+    if(this->packet_num == 0)
+        this->packet_num++;
+    
+    return this->packet_num;
 }

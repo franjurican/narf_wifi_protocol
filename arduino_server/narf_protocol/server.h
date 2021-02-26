@@ -29,14 +29,16 @@ class NarfWirelessProtocolServer
         /* 
             Checks for header "inside" header situations! 
             \param client connection with client
+            \return message packet number(1-255), if header is not detected returns 0!
         */
-        bool checkHeaderBody(WiFiClient &client);
+        uint8_t checkHeaderBody(WiFiClient &client);
 
         /* 
             Detects message header - start of message packet.
             \param client connection with client
+            \return message packet number(1-255), if header is not detected returns 0!
          */
-        bool detectMsgHeader(WiFiClient &client);
+        uint8_t detectMsgHeader(WiFiClient &client);
 
         /*
             Get body of protocol message packet.
@@ -50,20 +52,22 @@ class NarfWirelessProtocolServer
         /*
             Responde to protocol msg.
             \param client connection with client
+            \param pack_num packet number
             \param lenght response data lenght
             \param response_code response code
             \param data response data 
         */
-        void respondeToMsg(WiFiClient &client, int lenght, uint8_t response_code, uint8_t data[]);
+        void respondeToMsg(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t response_code, uint8_t data[]);
 
         /*  
             Execute request cmd.
             \param client connection with client
+            \param pack_num packet number
             \param lenght command data lenght
             \param cmd command
             \param data command data  
         */
-        void executeRequest(WiFiClient &client, int lenght, uint8_t cmd, uint8_t data[]);
+        void executeRequest(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t cmd, uint8_t data[]);
         
         //////////////////////////////
         // POSSIBLE REQUEST METHODS //
@@ -71,18 +75,20 @@ class NarfWirelessProtocolServer
         /*
             Request method for reading digital PINs logical values. Async PIN read!!
             \param client connection with client
+            \param pack_num packet number
             \param lenght data lenght - number of PINs
             \param data request data - PIN numbers(one byte per PIN)
         */
-        void reqReadPinsD(WiFiClient &client, int lenght, uint8_t data[]);
+        void reqReadPinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[]);
 
         /*
             Request method for writing to digital PINs.
             \param client connection with client
+            \param pack_num packet number
             \param lenght data lenght
             \param data request data - PIN numbers(one byte per PIN)
         */
-        void reqWritePinsD(WiFiClient &client, int lenght, uint8_t data[]);
+        void reqWritePinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[]);
 
         // private variables
         /* module init successfully */
