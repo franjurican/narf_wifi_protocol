@@ -64,8 +64,8 @@ class NarfWirelessProtocolClient
         uint8_t getResponseMsg(uint8_t pack_num, short int &res_lenght, uint8_t res_data[]);
 
         /*
-            Generate packet number.
-            \retunr packet number
+            Generate packet number. 1-255/{0xAC}
+            \return packet number
         */
         uint8_t generatePacketNumber();
 

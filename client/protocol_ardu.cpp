@@ -39,9 +39,10 @@ int main(int argc, char *argv[])
     uint8_t data[] = {8, 1}, res_data[NARF_PROT_MAX_MSG_DATA_SIZE];
     short int lenght = sizeof(data), res_lenght;
 
+    data[1] = 1;
     res_cmd = client.sendProtocolMsg(NARF_CMD_WRITE_PINS_D, lenght, data, res_lenght, res_data);
     printResponseMsg(res_cmd, res_lenght, res_data);
-    usleep(2e6);
+    usleep(0.1e6);
 
     data[1] = 0;
     res_cmd = client.sendProtocolMsg(NARF_CMD_WRITE_PINS_D, lenght, data, res_lenght, res_data);

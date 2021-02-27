@@ -87,7 +87,7 @@ bool NarfWirelessProtocolClient::checkHeaderBody(uint8_t pack_num)
     else if(buff != 0x72)
         return this->detectMsgHeader(pack_num);
 
-    // packet number
+    // packet number - CAN'T BE EQUAL TO START BITS!!!!
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return false;
@@ -214,8 +214,8 @@ uint8_t NarfWirelessProtocolClient::generatePacketNumber()
     // new packet
     this->packet_num++;
 
-    // packet number goes from 1-255!!
-    if(this->packet_num == 0)
+    // packet number goes from 1-255/{0xAC}!!
+    if(this->packet_num == 0 || this->packet_num == 0xAC)
         this->packet_num++;
     
     return this->packet_num;

@@ -28,8 +28,11 @@ void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
             
         if(packet_number)
         {
+            unsigned int t1 = millis();
             lenght = this->getRawMsgBody(this->client, &cmd, data);
             this->executeRequest(client, packet_number, lenght, cmd, data);
+            Serial.print("Vrijeme izvrsavanja: ");
+            Serial.println(millis() - t1);
 
             Serial.println("Primljena poruka: ");
             Serial.print("Duljina poruke: ");
@@ -104,7 +107,7 @@ uint8_t NarfWirelessProtocolServer::checkHeaderBody(WiFiClient &client)
     else if(buff != 0x72)
         return 0;
 
-    // packet number
+    // packet number - CAN'T BE EQUAL TO START BITS!!!!
     bytes_read = client.readBytes(&buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
         return 0;
