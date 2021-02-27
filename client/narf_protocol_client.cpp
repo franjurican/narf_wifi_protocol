@@ -63,7 +63,7 @@ bool NarfWirelessProtocolClient::checkHeaderBody(uint8_t pack_num)
 {
     uint8_t buff;
     int bytes_read;
-
+    
     // for MAX recursive function calls!!
     if(this->head_rec_count == NARF_PROT_REC_HEAD_MAX)
         return false;
@@ -205,8 +205,8 @@ uint8_t NarfWirelessProtocolClient::getResponseMsg(uint8_t pack_num, short int &
         }
         return cmd;
     }
-    else
-        return NARF_RES_ERROR_HEADER;
+
+    return NARF_RES_ERROR_HEADER;
 }
 
 uint8_t NarfWirelessProtocolClient::generatePacketNumber()

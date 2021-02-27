@@ -82,7 +82,7 @@ class NarfWirelessProtocolServer
         void reqReadPinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[]);
 
         /*
-            Request method for writing to digital PINs.
+            Request method for writing to digital PINs. Async PIN write!!
             \param client connection with client
             \param pack_num packet number
             \param lenght data lenght

@@ -5,12 +5,13 @@ NarfWirelessProtocolServer::NarfWirelessProtocolServer(int port) : module_init(f
 
 void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
 {
-    int lenght;
-    uint8_t packet_number, cmd = 0, data[NARF_PROT_MAX_MSG_DATA_SIZE] = {0};
-
     // check if module is initialized
     if(!this->module_init)
         return;
+    
+    // local vars
+    int lenght;
+    uint8_t packet_number, cmd = 0, data[NARF_PROT_MAX_MSG_DATA_SIZE] = {0};
 
     // get connection with client and set timeout(between bytes!)
     this->client = this->server.available();
@@ -28,6 +29,7 @@ void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
         if(packet_number)
         {
             lenght = this->getRawMsgBody(this->client, &cmd, data);
+            this->executeRequest(client, packet_number, lenght, cmd, data);
 
             Serial.println("Primljena poruka: ");
             Serial.print("Duljina poruke: ");
@@ -37,8 +39,6 @@ void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
             Serial.print("Primljeni podatci: ");
             Serial.println((int)data[0]);
             Serial.println();
-
-            this->executeRequest(client, packet_number, lenght, cmd, data);
         }
     }
 }
@@ -217,7 +217,7 @@ int NarfWirelessProtocolServer::getRawMsgBody(WiFiClient &client, uint8_t *cmd, 
 void NarfWirelessProtocolServer::respondeToMsg(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t response_code, uint8_t data[])
 {
     // send header
-    const uint8_t header[15] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
+    const uint8_t header[] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
     client.write(header, sizeof(header));
 
     // send lenght
@@ -281,7 +281,7 @@ void NarfWirelessProtocolServer::reqReadPinsD(WiFiClient &client, uint8_t pack_n
     for(int i = 0; i < lenght; i++)
     {   
         // does PIN exists
-        if(data[i] < NARF_PROT_PIN_MIN_NUM || data[i] > NARF_PROT_PIN_MAX_NUM)
+        if(data[i] < (uint8_t)NARF_PROT_PIN_MIN_NUM || data[i] > (uint8_t)NARF_PROT_PIN_MAX_NUM)
         {
             this->respondeToMsg(client, pack_num, 0, NARF_RES_ERROR_INVALID_DATA, NULL);
             return;
@@ -296,5 +296,26 @@ void NarfWirelessProtocolServer::reqReadPinsD(WiFiClient &client, uint8_t pack_n
 
 void NarfWirelessProtocolServer::reqWritePinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[])
 {
+    // if request data dosen't have even number of bytes
+    if(lenght % 2 || lenght == 0)
+    {
+        this->respondeToMsg(client, pack_num, 0, NARF_RES_ERROR_INVALID_DATA, NULL);
+        return;
+    }
 
+    // write digital PINs
+    for(int i = 0; i < lenght; i += 2)
+    {   
+        // does PIN exists
+        if(data[i] < (uint8_t)NARF_PROT_PIN_MIN_NUM || data[i] > (uint8_t)NARF_PROT_PIN_MAX_NUM || data[i + 1] > (uint8_t)1)
+        {
+            this->respondeToMsg(client, pack_num, 0, NARF_RES_ERROR_INVALID_DATA, NULL);
+            return;
+        }
+
+        digitalWrite(data[i], data[i + 1]);
+    }
+
+    // send data to client
+    this->respondeToMsg(client, pack_num, 0, NARF_RES_OK, NULL);
 }
