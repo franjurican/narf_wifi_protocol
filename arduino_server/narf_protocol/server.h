@@ -26,29 +26,6 @@ class NarfWirelessProtocolServer
         void initializeWiFiModuleAP(IPAddress arduinoIP);
 
     private:
-        /* 
-            Checks for header "inside" header situations! 
-            \param client connection with client
-            \return message packet number(1-255), if header is not detected returns 0!
-        */
-        uint8_t checkHeaderBody(WiFiClient &client);
-
-        /* 
-            Detects message header - start of message packet.
-            \param client connection with client
-            \return message packet number(1-255), if header is not detected returns 0!
-         */
-        uint8_t detectMsgHeader(WiFiClient &client);
-
-        /*
-            Get body of protocol message packet.
-            \param client connection with client
-            \param cmd command(description) of packet load
-            \param data actual data in message body
-            \return lenght(bytes) of message body, on error returns negative value!
-        */
-        int getRawMsgBody(WiFiClient &client, uint8_t *cmd, uint8_t data[]);
-        
         /*
             Responde to protocol msg.
             \param client connection with client
@@ -60,7 +37,7 @@ class NarfWirelessProtocolServer
         void respondeToMsg(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t response_code, uint8_t data[]);
 
         /*  
-            Execute request cmd.
+            Execute request cmd. If there is error with packet(eror code is in lenght!!), closes conection!
             \param client connection with client
             \param pack_num packet number
             \param lenght command data lenght
@@ -68,6 +45,17 @@ class NarfWirelessProtocolServer
             \param data command data  
         */
         void executeRequest(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t cmd, uint8_t data[]);
+
+        /*
+            Get msg packet secure. This method gets msg packet, if there is some error with packet, 
+            connection must be closed!!
+            \param client connection with client
+            \param pack_num packet number
+            \param cmd command
+            \param data command data
+            \return data lenght, on error returns error code: -1 for timeout, -2 for data lenght, -4 for communication error
+        */
+        int getMsgPacketSecure(WiFiClient &client, uint8_t &pack_num, uint8_t &cmd, uint8_t data[]);
         
         //////////////////////////////
         // POSSIBLE REQUEST METHODS //
@@ -99,9 +87,6 @@ class NarfWirelessProtocolServer
 
         /* server for protocol */
         WiFiServer server;
-
-        /* count recursive function calls - checkHeaderBody() */
-        int head_rec_count;
 };
 
 #endif // NARF_WIRELESS_PROTOCOL_SERVER_H

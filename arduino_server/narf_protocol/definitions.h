@@ -21,15 +21,22 @@
 #define NARF_CMD_READ_PINS_D     0x08
 #define NARF_CMD_WRITE_PINS_D    0x16
 
-///////////////////////
-// PROTOCOL RESPONSE //
-///////////////////////
-#define NARF_RES_OK                    0x08
-#define NARF_RES_ERROR_MSG_SIZE        0x16 
-#define NARF_RES_ERROR_CMD_UNKNOWN     0x24
-#define NARF_RES_ERROR_TIMEOUT         0x32
-#define NARF_RES_ERROR_INVALID_DATA    0x40
-#define NARF_RES_ERROR_HEADER          0x48
-#define NARF_RES_ERROR_UNKNOWN         0xAA 
+////////////////////////////////////////////
+// PROTOCOL RESPONSE - SERVER SIDE ERRORS //
+////////////////////////////////////////////
+#define NARF_RES_OK                     0x08
+#define NARF_RES_ERROR_MSG_SIZE_C       0x16 
+#define NARF_RES_ERROR_CMD_UNKNOWN      0x24
+#define NARF_RES_ERROR_TIMEOUT_C        0x32
+#define NARF_RES_ERROR_INVALID_DATA     0x40
+#define NARF_RES_ERROR_COMMUNICATION_C  0x48
+#define NARF_RES_ERROR_UNKNOWN_C        0xAA 
+
+////////////////////////
+// CLIENT SIDE ERRORS //
+////////////////////////
+#define NARF_CLIENT_ERROR_MSG_SIZE_C      0x64
+#define NARF_CLIENT_ERROR_TIMEOUT_C       0x72
+#define NARF_CLIENT_ERROR_COMMUNICATION_C 0x80
 
 #endif // NARF_WIRELESS_PROTOCOL_DEFINITIONS_H

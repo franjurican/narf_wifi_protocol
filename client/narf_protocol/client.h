@@ -39,21 +39,14 @@ class NarfWirelessProtocolClient
         */
         uint8_t sendProtocolMsg(uint8_t cmd, short int lenght, uint8_t req_data[], short int &res_lenght, uint8_t res_data[]);
 
+        /*
+            Reconnect to server. This method closes previous connection and opens new one!
+            \param timeout_ms maximal wait time for server bytes
+            \param tcp_delay enable Nagles buffering(write delay up to 200ms)
+        */
+       void reconnectToServer(uint32_t timeout_ms = NARF_PROT_BYTE_WAIT_TIMEOUT, bool tcp_delay = false);
+
     private:
-        /* 
-            Checks for header "inside" header situations!
-            \param pack_num packet number   
-            \return true if header is finded
-        */
-        bool checkHeaderBody(uint8_t pack_num);
-
-        /* 
-            Detects message header - start of message packet.
-            \param pack_num packet number
-            \return true if header is finded
-        */
-        bool detectMsgHeader(uint8_t pack_num);
-
         /* 
             Read response msg.
             \param pack_num packet number
@@ -78,9 +71,6 @@ class NarfWirelessProtocolClient
 
         /* server port number */
         uint_fast16_t server_port;
-
-        /* count recursive function calls - checkHeaderBody() */
-        int head_rec_count;
 
         /* msg packet number */
         uint8_t packet_num;
