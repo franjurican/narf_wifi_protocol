@@ -1,17 +1,25 @@
 #include "narf_protocol/server.h"
 
-NarfWirelessProtocolServer::NarfWirelessProtocolServer(int port) : module_init(false), server(port)
+// #define NARF_DEBUG_MODE 
+
+#ifdef NARF_DEBUG_MODE
+#define PRINT_SERIAL_MSG(msg) Serial.print(msg);
+#define PRINT_SERIAL_DATA(data, serial_option) Serial.print(data, serial_option); Serial.print(" ");
+#define PRINT_SERIAL_ARRAY(data, lenght, serial_option) for(int i = 0; i < lenght; i++) {Serial.print(data[i], serial_option); Serial.print(" ");}
+#else
+#define PRINT_SERIAL_MSG(msg)
+#define PRINT_SERIAL_DATA(data, serial_option)
+#define PRINT_SERIAL_ARRAY(data, lenght, serial_option)
+#endif 
+
+NarfWirelessProtocolServer::NarfWirelessProtocolServer(int port) : server(port)
 {}
 
 void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
 {
-    // check if module is initialized
-    if(!this->module_init)
-        return;
-    
     // local vars
     int lenght;
-    uint8_t packet_number = 255, cmd = 255, data[NARF_PROT_MAX_MSG_DATA_SIZE] = {0};
+    uint8_t packet_number, cmd, data[NARF_PROT_MAX_MSG_DATA_SIZE] = {0};
 
     // get connection with client and set timeout(between bytes!)
     this->client = this->server.available();
@@ -21,6 +29,11 @@ void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
     if(this->client) 
     {
         // get packet
+        PRINT_SERIAL_MSG("\n")
+        PRINT_SERIAL_MSG("Dostupno bytova na clientu: ")
+        PRINT_SERIAL_DATA(this->client.available(), DEC);
+        PRINT_SERIAL_MSG("\n")
+        PRINT_SERIAL_MSG("Header: ")
         unsigned long int t1 = millis(), t2;
         lenght = this->getMsgPacketSecure(this->client, packet_number, cmd, data);
         this->executeRequest(client, packet_number, lenght, cmd, data);
@@ -29,40 +42,23 @@ void NarfWirelessProtocolServer::checkForProtocolMsg(int timeout)
         Serial.print("Vrijeme izvrsavanja zahtjeva: ");
         Serial.println(t2);
         Serial.println();
-
-        Serial.print("Header packet number: ");
-        Serial.println(packet_number);
-        Serial.println();
-
-        Serial.println("Primljena poruka: ");
-        Serial.print("Duljina poruke: ");
-        Serial.println(lenght);
-        Serial.print("Primljena naredba: ");
-        Serial.println(cmd);
-        Serial.print("Primljeni podatci: ");
-        Serial.println((int)data[0]);
-        Serial.println();
+    }
+    else if(!this->client.connected())
+    {
+        this->closeConnection(this->client);
+        PRINT_SERIAL_MSG("Klijent zatvorio konekciju, gasim socket!")
+        PRINT_SERIAL_MSG("\n")
     }
 }
 
-void NarfWirelessProtocolServer::initializeWiFiModuleAP(IPAddress arduinoIP)
+bool NarfWirelessProtocolServer::initializeWiFiModuleAP(IPAddress arduinoIP)
 {
-    // detect wifi module
-    if(WiFi.status() == WL_NO_MODULE)
-    {
-        Serial.println("Ne mogu pristupiti WiFi modulu.");
-        return;
-    }
-
     // create AP
     if(WiFi.beginAP(NARF_AP_SSID, NARF_AP_PASSWORD) != WL_AP_LISTENING)
     {
         Serial.println("Nisam uspio kreirati AP.");
-        return; 
+        return false; 
     }
-
-    // module init successfully
-    this->module_init = true;
     
     // AP info
     Serial.println("AP kreiran uspijesno!");
@@ -76,97 +72,56 @@ void NarfWirelessProtocolServer::initializeWiFiModuleAP(IPAddress arduinoIP)
     this->server.begin();
     Serial.print("\nIP adresa arduina na kreiranom WLAN-u: ");
     Serial.println(WiFi.localIP());
+    return true;
 }
 
 int NarfWirelessProtocolServer::getMsgPacketSecure(WiFiClient &client, uint8_t &pack_num, uint8_t &cmd, uint8_t data[])
 {
-    uint8_t buff;
+    uint8_t buff, head[NARF_PROT_HEADER_SIZE] = {0}, up, down;
     int bytes_read, lenght;
 
     ////////////
     // header //
     ////////////
-
-    // header start byte
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
+    bytes_read = client.readBytes(head, sizeof(head));
+    PRINT_SERIAL_MSG("Header: ");
+    PRINT_SERIAL_ARRAY(head, NARF_PROT_HEADER_SIZE, HEX)
+    PRINT_SERIAL_MSG("\n")
+    if(bytes_read != sizeof(head))
         return -1;
-    else if(buff != 0xAC)
-        return -4;
 
-    // protocol check bytes
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0x46)
-        return -4;
-
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0x72)
-        return -4;
-
-    // packet number
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
+    if(head[0] != 0xAC || head[1] != 0x46 || head[2] != 0x72 || head[4] != 0x41 || head[5] != 0x6E || head[6] != 0x4A 
+            || head[7] != NARF_PROT_VER_MAX || head[8] != NARF_PROT_VER_MIN || head[9] != 0xDC)
+        return -4; 
     else
-        pack_num = buff;
-    
-    // protocol check bytes
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0x41)
-        return -4;
-    
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0x6E)
-        return -4;
-
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0x4A)
-        return -4;
-    
-    // version max
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != NARF_PROT_VER_MAX)
-        return -4;
-
-    // version min
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != NARF_PROT_VER_MIN)
-        return -4;
-
-    // header end bytes
-    bytes_read = client.readBytes(&buff, sizeof(uint8_t));
-    if(bytes_read != sizeof(uint8_t))
-        return -1;
-    else if(buff != 0xDC)
-        return -4;
+        pack_num = head[3];
 
     //////////
     // data //
     //////////
-
-    // read msg body lenght
-    bytes_read = client.readBytes((uint8_t *) &lenght, sizeof(int));
-    if(bytes_read != sizeof(int))
+    // read lenght bytes
+    bytes_read = client.readBytes(&up, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
         return -1;
-    else if(lenght > NARF_PROT_MAX_MSG_DATA_SIZE || lenght < 0)
+
+    bytes_read = client.readBytes(&down, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
+        return -1;
+
+    // get lenght
+    lenght = (int)up << 8 | (int)down;
+
+    PRINT_SERIAL_MSG("Duljina podataka: ");
+    PRINT_SERIAL_DATA(lenght, DEC);
+    PRINT_SERIAL_MSG("\n")
+    if(lenght > NARF_PROT_MAX_MSG_DATA_SIZE || lenght < 0)
         return -2;
     
     // read cmd
     bytes_read = client.readBytes(&cmd, sizeof(uint8_t));
+    PRINT_SERIAL_MSG("Cmd: ");
+    PRINT_SERIAL_DATA(cmd, HEX);
+    PRINT_SERIAL_MSG("\n")
     if(bytes_read != sizeof(uint8_t))
         return -1;
 
@@ -174,6 +129,9 @@ int NarfWirelessProtocolServer::getMsgPacketSecure(WiFiClient &client, uint8_t &
     if(lenght > 0)
     {
         bytes_read = client.readBytes(data, lenght);
+        PRINT_SERIAL_MSG("Podatci: ");
+        PRINT_SERIAL_ARRAY(data, lenght, DEC)
+        PRINT_SERIAL_MSG("\n")
         if(bytes_read != lenght)
             return -1;
     }
@@ -184,18 +142,19 @@ int NarfWirelessProtocolServer::getMsgPacketSecure(WiFiClient &client, uint8_t &
 void NarfWirelessProtocolServer::respondeToMsg(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t response_code, uint8_t data[])
 {
     // send header
-    uint8_t header[] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
-    client.write(header, sizeof(header));
+    uint8_t packet[NARF_PROT_HEADER_SIZE + 3 + lenght] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
+    
+    // lenght and response code
+    packet[NARF_PROT_HEADER_SIZE] = (lenght & 0xFF00) >> 8;
+    packet[NARF_PROT_HEADER_SIZE + 1] = (lenght & 0x00FF);
+    packet[NARF_PROT_HEADER_SIZE + 2] = response_code;
 
-    // send lenght
-    client.write((const uint8_t*) &lenght, sizeof(lenght));
-
-    // send response code
-    client.write(response_code);
-
-    // send response data
-    if(lenght > 0)
-        client.write((const uint8_t*)data, lenght);
+    // data
+    for(int i = 0; i < lenght; i++)
+        packet[NARF_PROT_HEADER_SIZE + 3 + i] = data[i];
+    
+    // send response
+    client.write(packet, sizeof(packet)); 
 }
 
 void NarfWirelessProtocolServer::executeRequest(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t cmd, uint8_t data[])
@@ -207,25 +166,39 @@ void NarfWirelessProtocolServer::executeRequest(WiFiClient &client, uint8_t pack
         {
             case -1:
                 this->respondeToMsg(client, 0xAC, 0, NARF_RES_ERROR_TIMEOUT_C, NULL);
+                PRINT_SERIAL_MSG("Poslan error: ")
+                PRINT_SERIAL_DATA(NARF_RES_ERROR_TIMEOUT_C, HEX)
+                PRINT_SERIAL_MSG("\n")
                 break;
             case -2:
                 this->respondeToMsg(client, 0xAC, 0, NARF_RES_ERROR_MSG_SIZE_C, NULL);
+                PRINT_SERIAL_MSG("Poslan error: ")
+                PRINT_SERIAL_DATA(NARF_RES_ERROR_MSG_SIZE_C, HEX)
+                PRINT_SERIAL_MSG("\n")
                 break;
             case -4:
                 this->respondeToMsg(client, 0xAC, 0, NARF_RES_ERROR_COMMUNICATION_C, NULL);
+                PRINT_SERIAL_MSG("Poslan error: ")
+                PRINT_SERIAL_DATA(NARF_RES_ERROR_COMMUNICATION_C, HEX)
+                PRINT_SERIAL_MSG("\n")
                 break;
             default:
                 this->respondeToMsg(client, 0xAC, 0, NARF_RES_ERROR_UNKNOWN_C, NULL);
+                PRINT_SERIAL_MSG("Poslan error: ")
+                PRINT_SERIAL_DATA(NARF_RES_ERROR_UNKNOWN_C, HEX)
+                PRINT_SERIAL_MSG("\n")
                 break;
         }
         
         // close connection
-        client.stop();
-        client.flush();
+        delay(200);
+        this->closeConnection(client);
+        PRINT_SERIAL_MSG("Gasim konekciju - server!")
+        PRINT_SERIAL_MSG("\n")
         return;
     }
 
-    // call request method
+    // call requested method
     switch (cmd)
     {
         case NARF_CMD_READ_PINS_D:
@@ -238,6 +211,13 @@ void NarfWirelessProtocolServer::executeRequest(WiFiClient &client, uint8_t pack
             this->respondeToMsg(client, pack_num, 0, NARF_RES_ERROR_CMD_UNKNOWN, NULL);
             break;
     }
+}
+
+void NarfWirelessProtocolServer::closeConnection(WiFiClient &client)
+{
+    client.stop();
+    if(client.available())
+        client.flush();
 }
 
 void NarfWirelessProtocolServer::reqReadPinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[])

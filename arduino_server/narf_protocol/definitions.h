@@ -5,8 +5,9 @@
 #define NARF_PROT_VER_MAX               1
 #define NARF_PROT_VER_MIN               0
 #define NARF_PROT_PORT_NUM             12
+#define NARF_PROT_HEADER_SIZE          10
 #define NARF_PROT_MAX_MSG_DATA_SIZE    64
-#define NARF_PROT_BYTE_WAIT_TIMEOUT   500
+#define NARF_PROT_BYTE_WAIT_TIMEOUT   750
 #define NARF_PROT_REC_HEAD_MAX        100
 #define NARF_PROT_PIN_MIN_NUM           2
 #define NARF_PROT_PIN_MAX_NUM          13

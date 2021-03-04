@@ -16,7 +16,14 @@ void setup()
     Serial.begin(9600);
     Serial.println("Pokrecem AP ...");
 
-    // wifi module
+    // detect wifi module
+    if(WiFi.status() == WL_NO_MODULE)
+    {
+        Serial.println("Ne mogu pristupiti WiFi modulu.");
+        while(1){}
+    }
+
+    // create AP
     narf.initializeWiFiModuleAP(IPAddress(192, 168, 1, 24));
 }
 
@@ -30,4 +37,9 @@ void loop()
     {   
         narf.checkForProtocolMsg();
     }
+    else 
+        Serial.println(WiFi.status());
+
+    // loop 20 Hz
+    // delay(50);
 }

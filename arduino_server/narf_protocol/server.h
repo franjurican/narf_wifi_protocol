@@ -23,7 +23,7 @@ class NarfWirelessProtocolServer
             Initialize WiFi module as AP and connects arduino to AP.
             \param arduinoIP IP adress of arduino
         */
-        void initializeWiFiModuleAP(IPAddress arduinoIP);
+        bool initializeWiFiModuleAP(IPAddress arduinoIP);
 
     private:
         /*
@@ -56,6 +56,12 @@ class NarfWirelessProtocolServer
             \return data lenght, on error returns error code: -1 for timeout, -2 for data lenght, -4 for communication error
         */
         int getMsgPacketSecure(WiFiClient &client, uint8_t &pack_num, uint8_t &cmd, uint8_t data[]);
+
+        /* 
+            Close connection.
+            \param client connection with client
+        */
+        void closeConnection(WiFiClient &client);
         
         //////////////////////////////
         // POSSIBLE REQUEST METHODS //
@@ -79,9 +85,6 @@ class NarfWirelessProtocolServer
         void reqWritePinsD(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t data[]);
 
         // private variables
-        /* module init successfully */
-        bool module_init;
-
         /* current connection to client */
         WiFiClient client;
 

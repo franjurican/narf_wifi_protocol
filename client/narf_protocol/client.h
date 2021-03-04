@@ -2,6 +2,7 @@
 #define NARF_WIRELESS_PROTOCOL_CLIENT_H
 
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <string.h>
 #include <unistd.h>
@@ -28,7 +29,7 @@ class NarfWirelessProtocolClient
             \param timeout_ms maximal wait time for server bytes
             \param tcp_delay enable Nagles buffering(write delay up to 200ms)
         */
-        void connectToServer(uint32_t timeout_ms = NARF_PROT_BYTE_WAIT_TIMEOUT, bool tcp_delay = false);
+        void connectToServer(uint32_t timeout_ms = 2000, bool tcp_delay = false);
 
         /* 
             Send protocol msg and get response from server.
@@ -44,7 +45,7 @@ class NarfWirelessProtocolClient
             \param timeout_ms maximal wait time for server bytes
             \param tcp_delay enable Nagles buffering(write delay up to 200ms)
         */
-       void reconnectToServer(uint32_t timeout_ms = NARF_PROT_BYTE_WAIT_TIMEOUT, bool tcp_delay = false);
+       void reconnectToServer(uint32_t timeout_ms = 2000, bool tcp_delay = false);
 
     private:
         /* 

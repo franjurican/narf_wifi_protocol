@@ -26,8 +26,8 @@ void NarfWirelessProtocolClient::connectToServer(uint32_t timeout_ms, bool tcp_d
         ERROR("Problem kod ukljucivanja TCP_NODELAY!")
 
     // read timeout
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout_ms * 1000;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
     if(setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof(tv)) < 0)
         ERROR("Problem kod postavljanja timeout-a!")
 
@@ -48,16 +48,19 @@ void NarfWirelessProtocolClient::connectToServer(uint32_t timeout_ms, bool tcp_d
 uint8_t NarfWirelessProtocolClient::sendProtocolMsg(uint8_t cmd, short int lenght, uint8_t req_data[], short int &res_lenght, uint8_t res_data[])
 {   
     uint8_t pack_num = this->generatePacketNumber();
-    uint8_t header[] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
+    uint8_t packet[NARF_PROT_HEADER_SIZE + 3 + lenght] = {0xAC, 0x46, 0x72, pack_num, 0x41, 0x6E, 0x4A, NARF_PROT_VER_MAX, NARF_PROT_VER_MIN, 0xDC};
 
-    // send header, lenght and cmd
-    write(this->sock_fd, header, sizeof(header));
-    write(this->sock_fd, &lenght, sizeof(lenght));
-    write(this->sock_fd, &cmd, sizeof(cmd));
+    // lenght and cmd
+    packet[NARF_PROT_HEADER_SIZE] = (lenght & 0xFF00) >> 8;
+    packet[NARF_PROT_HEADER_SIZE + 1] = (lenght & 0x00FF);
+    packet[NARF_PROT_HEADER_SIZE + 2] = cmd;
 
-    // send req data
-    if(lenght > 0)
-        write(this->sock_fd, req_data, lenght);;
+    // data
+    for(int i = 0; i < lenght; i++)
+        packet[NARF_PROT_HEADER_SIZE + 3 + i] = req_data[i];
+
+    // send request
+    write(this->sock_fd, packet, sizeof(packet));
 
     return this->getResponseMsg(pack_num, res_lenght, res_data);
 }
@@ -72,13 +75,12 @@ void  NarfWirelessProtocolClient::reconnectToServer(uint32_t timeout_ms, bool tc
 
 uint8_t NarfWirelessProtocolClient::getResponseMsg(uint8_t pack_num, short int &res_lenght, uint8_t res_data[])
 {
-    uint8_t buff, cmd, pn;
+    uint8_t buff, cmd, up, down;
     int bytes_read;
 
     ////////////
     // header //
     ////////////
-
     // header start byte
     bytes_read = read(this->sock_fd, &buff, sizeof(uint8_t));
     if(bytes_read != sizeof(uint8_t))
@@ -149,12 +151,19 @@ uint8_t NarfWirelessProtocolClient::getResponseMsg(uint8_t pack_num, short int &
     //////////
     // data //
     //////////
-
-    // read msg body lenght
-    bytes_read = read(this->sock_fd, (uint8_t *) &res_lenght, sizeof(short int));
-    if(bytes_read != sizeof(short int))
+    // read lenght bytes
+    bytes_read = read(this->sock_fd, &up, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
         return NARF_CLIENT_ERROR_TIMEOUT_C;
-    else if(res_lenght > NARF_PROT_MAX_MSG_DATA_SIZE || res_lenght < 0)
+
+    bytes_read = read(this->sock_fd, &down, sizeof(uint8_t));
+    if(bytes_read != sizeof(uint8_t))
+        return NARF_CLIENT_ERROR_TIMEOUT_C;
+
+    // get lenght
+    res_lenght = (short int)up << 8 | (short int)down;
+
+    if(res_lenght > NARF_PROT_MAX_MSG_DATA_SIZE || res_lenght < 0)
         return NARF_CLIENT_ERROR_MSG_SIZE_C;
     
     // read cmd
