@@ -150,8 +150,7 @@ void NarfWirelessProtocolServer::respondeToMsg(WiFiClient &client, uint8_t pack_
     packet[NARF_PROT_HEADER_SIZE + 2] = response_code;
 
     // data
-    for(int i = 0; i < lenght; i++)
-        packet[NARF_PROT_HEADER_SIZE + 3 + i] = data[i];
+    memcpy(packet + NARF_PROT_HEADER_SIZE + 3, data, lenght);
     
     // send response
     client.write(packet, sizeof(packet)); 

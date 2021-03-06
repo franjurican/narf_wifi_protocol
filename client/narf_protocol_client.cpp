@@ -56,8 +56,7 @@ uint8_t NarfWirelessProtocolClient::sendProtocolMsg(uint8_t cmd, short int lengh
     packet[NARF_PROT_HEADER_SIZE + 2] = cmd;
 
     // data
-    for(int i = 0; i < lenght; i++)
-        packet[NARF_PROT_HEADER_SIZE + 3 + i] = req_data[i];
+    memcpy(packet + NARF_PROT_HEADER_SIZE + 3, req_data, lenght);
 
     // send request
     write(this->sock_fd, packet, sizeof(packet));

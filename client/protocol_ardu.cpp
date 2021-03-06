@@ -84,9 +84,9 @@ void simpleCLI(NarfWirelessProtocolClient &client)
 int main(int argc, char *argv[])
 {
     uint8_t res_cmd;
-    uint8_t data[] = {8, 1}, res_data[NARF_PROT_MAX_MSG_DATA_SIZE];
+    uint8_t data[] = {2, 4, 6, 8, 10}, res_data[NARF_PROT_MAX_MSG_DATA_SIZE];
     short int lenght = sizeof(data), res_lenght;
-    long unsigned int k = 0, e = 0, packet_num = 10000;
+    long unsigned int k = 0, e = 0, packet_num = 1000;
     double wait_time = 0.05e6;
     NarfWirelessProtocolClient client("192.168.1.24");
 
@@ -95,9 +95,9 @@ int main(int argc, char *argv[])
     while(k < packet_num)
     {
         std::cout << "Poslanih paketa:" << k << ", errora: " << e << std::endl;
-        data[1] = 1; 
+        //data[1] = 1; 
         k++;
-        res_cmd = client.sendProtocolMsg(NARF_CMD_WRITE_PINS_D, lenght, data, res_lenght, res_data);
+        res_cmd = client.sendProtocolMsg(NARF_CMD_READ_PINS_D, lenght, data, res_lenght, res_data);
         printResponseMsg(res_cmd, res_lenght, res_data);
 
         if(res_cmd != NARF_RES_OK)
@@ -108,9 +108,9 @@ int main(int argc, char *argv[])
 
         //usleep(wait_time); 
 
-        data[1] = 0;
+        //data[1] = 0;
         k++;
-        res_cmd = client.sendProtocolMsg(NARF_CMD_WRITE_PINS_D, lenght, data, res_lenght, res_data);
+        res_cmd = client.sendProtocolMsg(NARF_CMD_READ_PINS_D, lenght, data, res_lenght, res_data);
         printResponseMsg(res_cmd, res_lenght, res_data);
 
         if(res_cmd != NARF_RES_OK)

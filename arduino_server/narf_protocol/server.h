@@ -37,7 +37,7 @@ class NarfWirelessProtocolServer
         void respondeToMsg(WiFiClient &client, uint8_t pack_num, int lenght, uint8_t response_code, uint8_t data[]);
 
         /*  
-            Execute request cmd. If there is error with packet(eror code is in lenght!!), closes conection!
+            Execute request cmd. If there is error with packet(eror code is in lenght!!), close conection!
             \param client connection with client
             \param pack_num packet number
             \param lenght command data lenght
